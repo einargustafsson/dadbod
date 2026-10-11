@@ -12,7 +12,7 @@ const set = (sessionId: number, reps: number, weight: number, targetReps = 5): S
 })
 
 const base = (over: Partial<SummaryInput> = {}): SummaryInput => ({
-  today: '2026-10-11', sessions: [], sets: [], bodyWeights: [], runs: [], settings: DEFAULT_SETTINGS, ...over,
+  today: '2026-10-11', sessions: [], sets: [], bodyWeights: [], runs: [], rides: [], settings: DEFAULT_SETTINGS, ...over,
 })
 
 afterEach(() => vi.unstubAllGlobals())
@@ -38,6 +38,19 @@ describe('buildSummary', () => {
     expect(s.training.deloadSessions).toBe(1)
     expect(s.training.lifts[0].lastE1rmKg).toBeCloseTo(70, 0)
     expect(s.running.weeklyKm).toEqual([{ weekStarting: '2026-10-05', km: 12 }])
+  })
+
+  it('summarizes cycling separately from running, within the window', () => {
+    const s = buildSummary(base({
+      runs: [{ date: '2026-10-06', distanceKm: 8, durationMin: 45, effort: 2 }],
+      rides: [
+        { date: '2026-08-01', distanceKm: 90, durationMin: 200, effort: 3 },
+        { date: '2026-10-05', distanceKm: 30, durationMin: 80, effort: 2 },
+        { date: '2026-10-08', distanceKm: 25.5, durationMin: 70, effort: 2 },
+      ],
+    }))
+    expect(s.cycling.weeklyKm).toEqual([{ weekStarting: '2026-10-05', km: 55.5 }])
+    expect(s.running.weeklyKm).toEqual([{ weekStarting: '2026-10-05', km: 8 }])
   })
 
   it('reports e1RM change and flags stalled lifts', () => {

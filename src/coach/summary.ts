@@ -2,7 +2,7 @@ import { EXERCISE_BY_ID } from '../db/seed/exercises'
 import { daysBetween, weekStart } from '../engine/dates'
 import { e1rm, isStalled, type ExercisePerformance } from '../engine/progress'
 import { assessRate, movingAverage, weeklyRate, type RateStatus } from '../engine/trend'
-import type { BodyWeight, Run, Session, SetLog, Settings } from '../types'
+import type { BodyWeight, Ride, Run, Session, SetLog, Settings } from '../types'
 
 const WINDOW_DAYS = 28
 
@@ -16,6 +16,7 @@ export interface CoachSummary {
     lifts: { name: string; sessions: number; firstE1rmKg: number; lastE1rmKg: number; stalled: boolean }[]
   }
   running: { weeklyKm: { weekStarting: string; km: number }[] }
+  cycling: { weeklyKm: { weekStarting: string; km: number }[] }
 }
 
 export interface SummaryInput {
@@ -24,6 +25,7 @@ export interface SummaryInput {
   sets: SetLog[]
   bodyWeights: BodyWeight[]
   runs: Run[]
+  rides: Ride[]
   settings: Settings
 }
 
@@ -33,7 +35,7 @@ const round1 = (n: number) => Math.round(n * 10) / 10
  * Compact, aggregate-only view of the last four weeks. This is the only data sent to the
  * Claude API: no notes, no API key, no raw per-set rows, no personal identifiers.
  */
-export function buildSummary({ today, sessions, sets, bodyWeights, runs, settings }: SummaryInput): CoachSummary {
+export function buildSummary({ today, sessions, sets, bodyWeights, runs, rides, settings }: SummaryInput): CoachSummary {
   const inWindow = (date: string) => daysBetween(date, today) >= 0 && daysBetween(date, today) < WINDOW_DAYS
 
   const trend = movingAverage(bodyWeights)
@@ -69,9 +71,12 @@ export function buildSummary({ today, sessions, sets, bodyWeights, runs, setting
     }
   }).sort((a, b) => b.sessions - a.sessions || a.name.localeCompare(b.name))
 
-  const km = new Map<string, number>()
-  for (const r of runs.filter((r) => inWindow(r.date))) {
-    km.set(weekStart(r.date), (km.get(weekStart(r.date)) ?? 0) + r.distanceKm)
+  const weeklyKm = (entries: { date: string; distanceKm: number }[]) => {
+    const km = new Map<string, number>()
+    for (const r of entries.filter((r) => inWindow(r.date))) {
+      km.set(weekStart(r.date), (km.get(weekStart(r.date)) ?? 0) + r.distanceKm)
+    }
+    return [...km].sort().map(([weekStarting, k]) => ({ weekStarting, km: round1(k) }))
   }
 
   return {
@@ -89,8 +94,7 @@ export function buildSummary({ today, sessions, sets, bodyWeights, runs, setting
       deloadSessions: done.filter((s) => s.deload).length,
       lifts,
     },
-    running: {
-      weeklyKm: [...km].sort().map(([weekStarting, k]) => ({ weekStarting, km: round1(k) })),
-    },
+    running: { weeklyKm: weeklyKm(runs) },
+    cycling: { weeklyKm: weeklyKm(rides) },
   }
 }

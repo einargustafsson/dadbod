@@ -52,6 +52,14 @@ export interface Run {
   effort: 1 | 2 | 3 | 4 | 5
 }
 
+export interface Ride {
+  id?: number
+  date: string
+  distanceKm: number
+  durationMin: number
+  effort: 1 | 2 | 3 | 4 | 5
+}
+
 export interface MobilityMove {
   id: string
   name: string

@@ -29,9 +29,10 @@ export function Progress() {
     return { dates, sets }
   }, [])
   const runs = useLiveQuery(() => db.runs.toArray(), [])
+  const rides = useLiveQuery(() => db.rides.toArray(), [])
   const [exId, setExId] = useState('')
 
-  if (!weights || !settings || !lifts || !runs) return null
+  if (!weights || !settings || !lifts || !runs || !rides) return null
 
   const trend = movingAverage(weights)
   const latest = trend[trend.length - 1]
@@ -62,6 +63,10 @@ export function Progress() {
   const km = new Map<string, number>()
   for (const r of runs) km.set(weekStart(r.date), (km.get(weekStart(r.date)) ?? 0) + r.distanceKm)
   const runData = [...km].sort().slice(-8).map(([week, k]) => ({ week: week.slice(5), km: Math.round(k * 10) / 10 }))
+
+  const rideKm = new Map<string, number>()
+  for (const r of rides) rideKm.set(weekStart(r.date), (rideKm.get(weekStart(r.date)) ?? 0) + r.distanceKm)
+  const rideData = [...rideKm].sort().slice(-8).map(([week, k]) => ({ week: week.slice(5), km: Math.round(k * 10) / 10 }))
 
   return (
     <div className="space-y-3">
@@ -134,6 +139,17 @@ export function Progress() {
             <BarChart data={runData}>
               <XAxis dataKey="week" {...axis} /><YAxis {...axis} width={32} /><Tooltip {...tip} />
               <Bar dataKey="km" fill="#34d399" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
+      <Card>
+        <div className="mb-2 font-semibold">Weekly cycling (km)</div>
+        <div className="h-40">
+          <ResponsiveContainer>
+            <BarChart data={rideData}>
+              <XAxis dataKey="week" {...axis} /><YAxis {...axis} width={32} /><Tooltip {...tip} />
+              <Bar dataKey="km" fill="#fbbf24" />
             </BarChart>
           </ResponsiveContainer>
         </div>

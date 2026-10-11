@@ -4,7 +4,7 @@ import { db } from '../db/schema'
 import { exportData, importData } from './backup'
 
 beforeEach(async () => {
-  await Promise.all([db.sessions.clear(), db.sets.clear(), db.bodyWeights.clear(), db.runs.clear(), db.settings.clear()])
+  await Promise.all([db.sessions.clear(), db.sets.clear(), db.bodyWeights.clear(), db.runs.clear(), db.rides.clear(), db.settings.clear()])
 })
 
 describe('backup', () => {
@@ -15,6 +15,7 @@ describe('backup', () => {
     })
     await db.bodyWeights.put({ date: '2026-10-01', kg: 92 })
     await db.runs.add({ date: '2026-10-02', distanceKm: 10, durationMin: 60, effort: 3 })
+    await db.rides.add({ date: '2026-10-04', distanceKm: 45, durationMin: 110, effort: 3 })
     const sid = (await db.sessions.add({
       date: '2026-10-03', type: 'upper', status: 'done', deload: false, exerciseIds: ['bench'], warmupIds: [], finisherIds: [],
     })) as number
@@ -24,15 +25,27 @@ describe('backup', () => {
     const text = JSON.stringify(backup)
     expect(text).not.toContain('sk-secret')
 
-    await Promise.all([db.sessions.clear(), db.sets.clear(), db.bodyWeights.clear(), db.runs.clear()])
+    await Promise.all([db.sessions.clear(), db.sets.clear(), db.bodyWeights.clear(), db.runs.clear(), db.rides.clear()])
     await importData(text)
     expect(await db.sessions.count()).toBe(1)
     expect(await db.sets.count()).toBe(1)
     expect(await db.bodyWeights.count()).toBe(1)
     expect(await db.runs.count()).toBe(1)
+    expect(await db.rides.toArray()).toMatchObject([{ date: '2026-10-04', distanceKm: 45 }])
     const settings = await db.settings.get('main')
     expect(settings?.startingWeights).toEqual({ bench: 60 })
     expect(settings?.claudeKey).toBe('sk-secret') // existing key preserved
+  })
+
+  it('imports a backup made before the ride log existed', async () => {
+    await db.rides.add({ date: '2026-10-04', distanceKm: 45, durationMin: 110, effort: 3 })
+    const old = {
+      app: 'dadbod', version: 1, exportedAt: '2026-09-01T00:00:00Z', sessions: [], sets: [],
+      bodyWeights: [{ date: '2026-09-01', kg: 92 }], runs: [], settings: null,
+    }
+    await importData(JSON.stringify(old))
+    expect(await db.bodyWeights.count()).toBe(1)
+    expect(await db.rides.count()).toBe(0) // import replaces everything, as documented
   })
 
   it('rejects bad files without touching existing data', async () => {

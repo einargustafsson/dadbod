@@ -5,7 +5,7 @@ import { buildSummary, type CoachSummary } from './summary'
 
 export const COACH_MODEL = 'claude-sonnet-5-5'
 
-export const SYSTEM_PROMPT = `You are a strength and conditioning coach reviewing four weeks of training data for one adult in their late 40s. They lift 3 times a week, run half-marathon distances, want to lose about 7 kg of body fat, keep their strength, and stay healthy as they age. They are not trying to add muscle mass.
+export const SYSTEM_PROMPT = `You are a strength and conditioning coach reviewing four weeks of training data for one adult in their late 40s. They lift 3 times a week, run half-marathon distances, cycle, want to lose about 7 kg of body fat, keep their strength, and stay healthy as they age. They are not trying to add muscle mass.
 
 You receive a JSON summary. Use only what it contains; if something you would need is missing, say so instead of guessing. Never invent numbers.
 
@@ -16,10 +16,10 @@ Reply in plain English, under 200 words, as:
 Your suggestions are advisory; the app does not change the plan automatically. This is not medical advice. If the data hints at rapid weight loss, or the user may be dealing with pain, injury, or chest or heart symptoms, tell them to see a physician.`
 
 export async function collectSummary(): Promise<CoachSummary> {
-  const [sessions, sets, bodyWeights, runs, settings] = await Promise.all([
-    db.sessions.toArray(), db.sets.toArray(), db.bodyWeights.toArray(), db.runs.toArray(), getSettings(),
+  const [sessions, sets, bodyWeights, runs, rides, settings] = await Promise.all([
+    db.sessions.toArray(), db.sets.toArray(), db.bodyWeights.toArray(), db.runs.toArray(), db.rides.toArray(), getSettings(),
   ])
-  return buildSummary({ today: isoDate(), sessions, sets, bodyWeights, runs, settings })
+  return buildSummary({ today: isoDate(), sessions, sets, bodyWeights, runs, rides, settings })
 }
 
 /**

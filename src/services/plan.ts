@@ -56,11 +56,11 @@ export function targetFor(ex: Exercise, perf: Record<string, ExercisePerformance
 }
 
 export async function buildPlan(rand?: () => number): Promise<Plan> {
-  const [settings, sessions, runs, perf] = await Promise.all([
-    getSettings(), db.sessions.toArray(), db.runs.toArray(), loadAllPerformance(),
+  const [settings, sessions, runs, rides, perf] = await Promise.all([
+    getSettings(), db.sessions.toArray(), db.runs.toArray(), db.rides.toArray(), loadAllPerformance(),
   ])
   const today = isoDate()
-  const next = nextSession(sessions, runs, today)
+  const next = nextSession(sessions, runs, today, rides)
 
   const cutoff = isoDate(new Date(Date.now() - 14 * 86_400_000))
   const recentIds = new Set(

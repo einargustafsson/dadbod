@@ -1,11 +1,12 @@
 import Dexie, { type EntityTable } from 'dexie'
-import type { BodyWeight, Run, Session, SetLog, Settings } from '../types'
+import type { BodyWeight, Ride, Run, Session, SetLog, Settings } from '../types'
 
 export const db = new Dexie('dadbod') as Dexie & {
   sessions: EntityTable<Session, 'id'>
   sets: EntityTable<SetLog, 'id'>
   bodyWeights: EntityTable<BodyWeight, 'date'>
   runs: EntityTable<Run, 'id'>
+  rides: EntityTable<Ride, 'id'>
   settings: EntityTable<Settings, 'id'>
 }
 
@@ -15,6 +16,10 @@ db.version(1).stores({
   bodyWeights: 'date',
   runs: '++id, date',
   settings: 'id',
+})
+
+db.version(2).stores({
+  rides: '++id, date',
 })
 
 export const DEFAULT_SETTINGS: Settings = {

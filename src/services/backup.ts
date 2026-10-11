@@ -1,5 +1,5 @@
 import { db } from '../db/schema'
-import type { BodyWeight, Run, Session, SetLog, Settings } from '../types'
+import type { BodyWeight, Ride, Run, Session, SetLog, Settings } from '../types'
 
 export interface Backup {
   app: 'dadbod'
@@ -9,6 +9,8 @@ export interface Backup {
   sets: SetLog[]
   bodyWeights: BodyWeight[]
   runs: Run[]
+  /** Absent in backups made before the ride log existed. */
+  rides?: Ride[]
   settings: Omit<Settings, 'claudeKey'> | null
 }
 
@@ -22,6 +24,7 @@ export async function exportData(): Promise<Backup> {
     sets: await db.sets.toArray(),
     bodyWeights: await db.bodyWeights.toArray(),
     runs: await db.runs.toArray(),
+    rides: await db.rides.toArray(),
     settings: settings ?? null,
   }
 }
@@ -30,7 +33,8 @@ function isBackup(x: unknown): x is Backup {
   const b = x as Backup
   return (
     !!b && b.app === 'dadbod' && b.version === 1 &&
-    Array.isArray(b.sessions) && Array.isArray(b.sets) && Array.isArray(b.bodyWeights) && Array.isArray(b.runs)
+    Array.isArray(b.sessions) && Array.isArray(b.sets) && Array.isArray(b.bodyWeights) && Array.isArray(b.runs) &&
+    (b.rides === undefined || Array.isArray(b.rides))
   )
 }
 
@@ -40,13 +44,14 @@ export async function importData(json: string): Promise<void> {
   try { parsed = JSON.parse(json) } catch { throw new Error('File is not valid JSON.') }
   if (!isBackup(parsed)) throw new Error('File is not a Dadbod backup.')
 
-  await db.transaction('rw', [db.sessions, db.sets, db.bodyWeights, db.runs, db.settings], async () => {
+  await db.transaction('rw', [db.sessions, db.sets, db.bodyWeights, db.runs, db.rides, db.settings], async () => {
     const existing = await db.settings.get('main')
-    await Promise.all([db.sessions.clear(), db.sets.clear(), db.bodyWeights.clear(), db.runs.clear(), db.settings.clear()])
+    await Promise.all([db.sessions.clear(), db.sets.clear(), db.bodyWeights.clear(), db.runs.clear(), db.rides.clear(), db.settings.clear()])
     await db.sessions.bulkPut(parsed.sessions)
     await db.sets.bulkPut(parsed.sets)
     await db.bodyWeights.bulkPut(parsed.bodyWeights)
     await db.runs.bulkPut(parsed.runs)
+    await db.rides.bulkPut(parsed.rides ?? [])
     if (parsed.settings) await db.settings.put({ ...parsed.settings, claudeKey: existing?.claudeKey })
   })
 }
