@@ -8,7 +8,7 @@ import { ExerciseAnimation } from './ExerciseAnimation'
 import { discardSession, finishSession, swapExercise } from '../services/plan'
 import { useApp } from '../store'
 import type { Exercise, SetLog } from '../types'
-import { Button, Card, H, fmtKg, inputCls } from '../ui'
+import { Button, Card, H, fmtKg, inputCls, parseNum } from '../ui'
 
 function RestTimer() {
   const { restEndsAt, clearRest } = useApp()
@@ -46,8 +46,8 @@ function SetRow({ set, defaultWeight, restSeconds }: { set: SetLog; defaultWeigh
       return
     }
     await db.sets.update(set.id!, {
-      actualReps: Number(r ?? set.targetReps),
-      actualWeight: Number(w ?? defaultWeight),
+      actualReps: parseNum(r ?? String(set.targetReps)),
+      actualWeight: parseNum(w ?? String(defaultWeight)),
       rpe: rpe ? Number(rpe) : undefined,
     })
     startRest(restSeconds)

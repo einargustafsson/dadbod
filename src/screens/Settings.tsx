@@ -4,7 +4,7 @@ import { DEFAULT_SETTINGS, db, getSettings } from '../db/schema'
 import { EXERCISES } from '../db/seed/exercises'
 import { exportData, importData } from '../services/backup'
 import type { Equipment, Settings as S } from '../types'
-import { Button, Card, H, fmtKg, inputCls } from '../ui'
+import { Button, Card, H, fmtKg, inputCls, parseNum } from '../ui'
 
 const EQUIPMENT: Equipment[] = ['barbell', 'dumbbell', 'machine', 'cable', 'bodyweight']
 
@@ -43,11 +43,11 @@ export function Settings() {
         <div className="grid grid-cols-3 gap-2">
           <label className="text-xs text-slate-400">Start (kg)
             <input className={inputCls} inputMode="decimal" defaultValue={settings.startWeight}
-              onBlur={(e) => Number(e.target.value) > 0 && save({ startWeight: Number(e.target.value) })} />
+              onBlur={(e) => parseNum(e.target.value) > 0 && save({ startWeight: parseNum(e.target.value) })} />
           </label>
           <label className="text-xs text-slate-400">Goal (kg)
             <input className={inputCls} inputMode="decimal" defaultValue={settings.goalWeight}
-              onBlur={(e) => Number(e.target.value) > 0 && save({ goalWeight: Number(e.target.value) })} />
+              onBlur={(e) => parseNum(e.target.value) > 0 && save({ goalWeight: parseNum(e.target.value) })} />
           </label>
           <label className="text-xs text-slate-400">Sets/lift
             <select className={inputCls} value={settings.setsPerExercise}
@@ -90,7 +90,7 @@ export function Settings() {
                   <input className={inputCls} inputMode="decimal" placeholder="kg"
                     defaultValue={settings.startingWeights[ex.id] ? fmtKg(settings.startingWeights[ex.id]) : ''}
                     onBlur={(e) => {
-                      const v = Number(e.target.value.replace(',', '.'))
+                      const v = parseNum(e.target.value)
                       const next = { ...settings.startingWeights }
                       if (v > 0) next[ex.id] = v
                       else delete next[ex.id]

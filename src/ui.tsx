@@ -27,6 +27,11 @@ export function H({ children }: { children: ReactNode }) {
 export const inputCls =
   'w-full rounded-lg bg-slate-900 px-3 py-2 text-base text-slate-100 outline-none ring-1 ring-slate-700 focus:ring-sky-500'
 
+/** Parses user-typed numbers, accepting a comma as the decimal separator (e.g. "92,5"). */
+export function parseNum(s: string): number {
+  return Number(s.trim().replace(',', '.'))
+}
+
 export function fmtKg(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1)
 }
